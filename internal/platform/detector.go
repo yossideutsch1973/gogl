@@ -275,16 +275,26 @@ func (d *Detector) queryCapabilities(version OpenGLVersion) Capabilities {
 	gl.GetIntegerv(gl.MAX_TEXTURE_IMAGE_UNITS, &caps.MaxTextureUnits)
 	gl.GetIntegerv(gl.MAX_VERTEX_ATTRIBS, &caps.MaxVertexAttributes)
 
-	// Feature support based on OpenGL version
-	caps.SupportsVAO = version.IsAtLeast(3, 0)
-	caps.SupportsTextureArrays = version.IsAtLeast(3, 0)
-	caps.SupportsUniformBuffers = version.IsAtLeast(3, 1)
-	caps.SupportsInstancedRendering = version.IsAtLeast(3, 1)
-	caps.SupportsGeometryShaders = version.IsAtLeast(3, 2)
-	caps.SupportsTessellation = version.IsAtLeast(4, 0)
-	caps.SupportsComputeShaders = version.IsAtLeast(4, 3)
-	caps.SupportsShaderStorageBuffers = version.IsAtLeast(4, 3)
-	caps.SupportsDebugCallback = version.IsAtLeast(4, 3)
+	// Feature support based on OpenGL version AND Go library limitations
+	// NOTE: This go-gl library is compiled for OpenGL 4.1 core, so we're limited
+	// to 4.1 features regardless of what the system reports
+	effectiveVersion := version
+	if version.Compare(OpenGLVersion{4, 1}) > 0 {
+		// System supports higher than 4.1, but Go library is limited to 4.1
+		effectiveVersion = OpenGLVersion{4, 1}
+	}
+
+	caps.SupportsVAO = effectiveVersion.IsAtLeast(3, 0)
+	caps.SupportsTextureArrays = effectiveVersion.IsAtLeast(3, 0)
+	caps.SupportsUniformBuffers = effectiveVersion.IsAtLeast(3, 1)
+	caps.SupportsInstancedRendering = effectiveVersion.IsAtLeast(3, 1)
+	caps.SupportsGeometryShaders = effectiveVersion.IsAtLeast(3, 2)
+	caps.SupportsTessellation = effectiveVersion.IsAtLeast(4, 0)
+	
+	// These require OpenGL 4.3+ which is not available in go-gl v4.1-core
+	caps.SupportsComputeShaders = false // Always false due to library limitation
+	caps.SupportsShaderStorageBuffers = false // Always false due to library limitation  
+	caps.SupportsDebugCallback = effectiveVersion.IsAtLeast(4, 3) // This might work in 4.1
 
 	// Query additional limits if supported
 	if caps.SupportsUniformBuffers {
@@ -304,6 +314,12 @@ func (d *Detector) queryCapabilities(version OpenGLVersion) Capabilities {
 func (d *Detector) generateNotes(info *SystemInfo) []string {
 	var notes []string
 
+	// Go library limitation note
+	if info.OpenGLVersion.Compare(OpenGLVersion{4, 1}) > 0 {
+		notes = append(notes, "NOTE: System supports "+info.OpenGLVersion.String()+" but Go library limited to OpenGL 4.1 core")
+		notes = append(notes, "Compute shaders and other 4.3+ features are not available through this library")
+	}
+
 	// macOS-specific notes
 	if info.Platform == PlatformMacOS {
 		notes = append(notes, "OpenGL is deprecated on macOS since 2018")
@@ -311,10 +327,6 @@ func (d *Detector) generateNotes(info *SystemInfo) []string {
 		
 		if info.Vendor == VendorApple {
 			notes = append(notes, "Using Apple Silicon GPU with Metal backend")
-		}
-		
-		if !info.Capabilities.SupportsComputeShaders {
-			notes = append(notes, "Compute shaders not supported on this OpenGL version")
 		}
 		
 		notes = append(notes, "Consider using Metal for production applications on macOS")
