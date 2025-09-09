@@ -3,12 +3,14 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"runtime"
 	"unsafe"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/yossideutsch/gogl/internal/platform"
 	"github.com/yossideutsch/gogl/pkg/pipeline"
 	"github.com/yossideutsch/gogl/pkg/resource"
 	"github.com/yossideutsch/gogl/pkg/shader"
@@ -31,7 +33,9 @@ type Particle struct {
 }
 
 var (
-	computeShaderSource = `#version 410 core
+	computeShaderSource = `#version 430
+// NOTE: Compute shaders require OpenGL 4.3+ / GLSL 4.30+
+// This will only work if the Go OpenGL binding supports 4.3+
 
 layout(local_size_x = 16, local_size_y = 1, local_size_z = 1) in;
 
@@ -215,16 +219,24 @@ func main() {
 	}
 	defer glfw.Terminate()
 
-	// Configure GLFW
+	// Configure GLFW - try for OpenGL 4.3+ first for compute shaders
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
-	glfw.WindowHint(glfw.ContextVersionMinor, 1)
+	glfw.WindowHint(glfw.ContextVersionMinor, 3)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
 	// Create window
 	window, err := glfw.CreateWindow(windowWidth, windowHeight, "Compute Shader Particle System", nil, nil)
 	if err != nil {
-		log.Fatal("Failed to create window:", err)
+		// Fallback to 4.1 and show warning
+		log.Println("Failed to create OpenGL 4.3 context, falling back to 4.1...")
+		glfw.WindowHint(glfw.ContextVersionMajor, 4)
+		glfw.WindowHint(glfw.ContextVersionMinor, 1)
+		
+		window, err = glfw.CreateWindow(windowWidth, windowHeight, "Compute Shader Demo (CPU Fallback)", nil, nil)
+		if err != nil {
+			log.Fatal("Failed to create window:", err)
+		}
 	}
 	window.MakeContextCurrent()
 
@@ -235,10 +247,34 @@ func main() {
 
 	fmt.Printf("OpenGL version: %s\n", gl.GoStr(gl.GetString(gl.VERSION)))
 
-	// Create demo
+	// Detect platform capabilities
+	detector := platform.New()
+	sysInfo, err := detector.Detect()
+	if err != nil {
+		log.Fatal("Failed to detect platform:", err)
+	}
+
+	// Check if compute shaders are supported
+	if !sysInfo.Capabilities.SupportsComputeShaders {
+		fmt.Println("\n⚠️  WARNING: Compute shaders not supported on this platform!")
+		fmt.Printf("Platform: %s, OpenGL: %s\n", sysInfo.Platform, sysInfo.OpenGLVersion)
+		fmt.Println("Required: OpenGL 4.3+ for compute shaders")
+		for _, note := range sysInfo.Notes {
+			fmt.Printf("• %s\n", note)
+		}
+		fmt.Println("\nRunning CPU-based particle simulation instead...")
+		
+		// Run CPU fallback demo
+		runCPUParticleDemo(window)
+		return
+	}
+
+	// Create GPU compute demo
 	demo, err := NewComputeDemo()
 	if err != nil {
-		log.Fatal("Failed to create demo:", err)
+		fmt.Printf("⚠️  Failed to create GPU demo, falling back to CPU: %v\n", err)
+		runCPUParticleDemo(window)
+		return
 	}
 	defer demo.Cleanup()
 
@@ -460,5 +496,185 @@ func (d *ComputeDemo) Cleanup() {
 	}
 	if d.particleVAO != nil {
 		d.particleVAO.Delete()
+	}
+}
+
+// CPU-based particle demo for platforms without compute shader support
+func runCPUParticleDemo(window *glfw.Window) {
+	fmt.Println("Running CPU-based particle simulation...")
+	
+	// Set up basic rendering state
+	gl.ClearColor(0.1, 0.1, 0.15, 1.0)
+	gl.Enable(gl.BLEND)
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	gl.Enable(gl.PROGRAM_POINT_SIZE)
+
+	// Simple vertex shader for CPU particles
+	vertexSource := `#version 410 core
+layout(location = 0) in vec2 aPosition;
+layout(location = 1) in vec4 aColor;
+layout(location = 2) in float aSize;
+
+out vec4 vColor;
+
+void main() {
+    vColor = aColor;
+    gl_Position = vec4(aPosition / vec2(400.0, 300.0), 0.0, 1.0);
+    gl_PointSize = aSize;
+}`
+
+	fragmentSource := `#version 410 core
+in vec4 vColor;
+out vec4 fragColor;
+
+void main() {
+    vec2 center = vec2(0.5, 0.5);
+    float distance = length(gl_PointCoord - center);
+    
+    if (distance > 0.5) {
+        discard;
+    }
+    
+    float intensity = 1.0 - (distance * 2.0);
+    fragColor = vec4(vColor.rgb * intensity, vColor.a * intensity);
+}`
+
+	// Compile shaders
+	vertexShader, err := shader.CompileShader(vertexSource, shader.VertexShader)
+	if err != nil {
+		log.Fatal("Failed to compile vertex shader:", err)
+	}
+	defer vertexShader.Delete()
+
+	fragmentShader, err := shader.CompileShader(fragmentSource, shader.FragmentShader)
+	if err != nil {
+		log.Fatal("Failed to compile fragment shader:", err)
+	}
+	defer fragmentShader.Delete()
+
+	program, err := shader.CreateProgram(vertexShader, fragmentShader)
+	if err != nil {
+		log.Fatal("Failed to create program:", err)
+	}
+	defer program.Delete()
+
+	// Create simple particle system
+	type CPUParticle struct {
+		X, Y     float32
+		VX, VY   float32
+		R, G, B, A float32
+		Life     float32
+		Size     float32
+	}
+
+	particles := make([]CPUParticle, 100)
+	for i := range particles {
+		particles[i] = CPUParticle{
+			X: 400, Y: 600, VX: 0, VY: -100,
+			R: 1, G: 1, B: 1, A: 1,
+			Life: 0, Size: 3,
+		}
+	}
+
+	// Create buffers
+	var vao, vbo uint32
+	gl.GenVertexArrays(1, &vao)
+	gl.GenBuffers(1, &vbo)
+	defer gl.DeleteVertexArrays(1, &vao)
+	defer gl.DeleteBuffers(1, &vbo)
+
+	gl.BindVertexArray(vao)
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+
+	// Position attribute
+	gl.VertexAttribPointer(0, 2, gl.FLOAT, false, 7*4, nil)
+	gl.EnableVertexAttribArray(0)
+
+	// Color attribute
+	gl.VertexAttribPointer(1, 4, gl.FLOAT, false, 7*4, gl.PtrOffset(2*4))
+	gl.EnableVertexAttribArray(1)
+
+	// Size attribute
+	gl.VertexAttribPointer(2, 1, gl.FLOAT, false, 7*4, gl.PtrOffset(6*4))
+	gl.EnableVertexAttribArray(2)
+
+	window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+		if key == glfw.KeyEscape && action == glfw.Press {
+			w.SetShouldClose(true)
+		}
+	})
+
+	glfw.SwapInterval(1)
+	lastTime := glfw.GetTime()
+
+	// Main loop
+	for !window.ShouldClose() {
+		currentTime := glfw.GetTime()
+		deltaTime := float32(currentTime - lastTime)
+		lastTime = currentTime
+
+		glfw.PollEvents()
+
+		// Update particles on CPU
+		for i := range particles {
+			p := &particles[i]
+			
+			p.Life -= deltaTime
+			if p.Life <= 0 {
+				// Respawn
+				p.X = 400 + (rand.Float32()-0.5)*100
+				p.Y = 600
+				p.VX = (rand.Float32()-0.5)*200
+				p.VY = -rand.Float32()*150 - 50
+				p.Life = 3 + rand.Float32()*2
+				p.R = 0.5 + rand.Float32()*0.5
+				p.G = 0.3 + rand.Float32()*0.4
+				p.B = 0.8 + rand.Float32()*0.2
+				p.A = 1.0
+			} else {
+				// Update physics
+				p.VY -= 200 * deltaTime // gravity
+				p.X += p.VX * deltaTime
+				p.Y += p.VY * deltaTime
+				
+				// Bounce off walls
+				if p.X < 0 || p.X > 800 {
+					p.VX *= -0.8
+					if p.X < 0 { p.X = 0 }
+					if p.X > 800 { p.X = 800 }
+				}
+				if p.Y < 0 {
+					p.VY *= -0.8
+					p.Y = 0
+				}
+				
+				// Fade
+				p.A = p.Life / 5.0
+			}
+		}
+
+		// Render
+		gl.Clear(gl.COLOR_BUFFER_BIT)
+		program.Use()
+
+		// Upload particle data
+		vertexData := make([]float32, len(particles)*7)
+		for i, p := range particles {
+			vertexData[i*7+0] = p.X
+			vertexData[i*7+1] = p.Y
+			vertexData[i*7+2] = p.R
+			vertexData[i*7+3] = p.G
+			vertexData[i*7+4] = p.B
+			vertexData[i*7+5] = p.A
+			vertexData[i*7+6] = p.Size
+		}
+
+		gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+		gl.BufferData(gl.ARRAY_BUFFER, len(vertexData)*4, gl.Ptr(vertexData), gl.DYNAMIC_DRAW)
+
+		gl.BindVertexArray(vao)
+		gl.DrawArrays(gl.POINTS, 0, int32(len(particles)))
+
+		window.SwapBuffers()
 	}
 }
