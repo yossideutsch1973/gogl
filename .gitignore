@@ -1,0 +1,58 @@
+# Build artifacts
+/build/
+/dist/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test and coverage artifacts
+*.test
+*.out
+coverage.html
+coverage.xml
+*.prof
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Go specific
+vendor/
+*.orig
+
+# Log files
+*.log
+
+# Compiled examples (keep sources)
+/cmd/examples/*/main
+/cmd/examples/basic/basic
+/cmd/examples/compute/compute
+/cmd/examples/geometry/geometry
+/cmd/examples/pipeline/pipeline
+/cmd/examples/platform/platform
+
+# Development tools
+/tools/
+/scripts/
+
+# Documentation build artifacts
+/docs/build/

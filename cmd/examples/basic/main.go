@@ -152,7 +152,9 @@ func main() {
 
 		// Update time uniform
 		currentTime := float32(glfw.GetTime() - startTime)
-		program.SetUniform1f(timeLocation, currentTime)
+		if err := program.SetUniform1f(timeLocation, currentTime); err != nil {
+			log.Printf("Warning: Failed to set time uniform: %v", err)
+		}
 
 		// Create rotating model matrix
 		rotationAngle := currentTime * 0.5
@@ -160,7 +162,9 @@ func main() {
 
 		// Calculate MVP matrix
 		mvp := projection.Mul4(view).Mul4(model)
-		program.SetUniformMatrix4fv(mvpLocation, &mvp)
+		if err := program.SetUniformMatrix4fv(mvpLocation, &mvp); err != nil {
+			log.Printf("Warning: Failed to set MVP uniform: %v", err)
+		}
 
 		// Draw triangle
 		gl.BindVertexArray(vao)

@@ -2,6 +2,7 @@ package shader_test
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -189,5 +190,105 @@ void main() {
 	invalidLocation := program.GetUniformLocation("uNonExistent")
 	if invalidLocation != -1 {
 		t.Error("Should return -1 for non-existent uniform")
+	}
+}
+
+// TestInputValidation tests the new input validation features
+func TestInputValidation(t *testing.T) {
+	// Test empty shader source
+	_, err := shader.CompileShader("", shader.VertexShader)
+	if err == nil {
+		t.Error("Expected error for empty shader source")
+	}
+
+	// Test very large shader source (mock the limit)
+	largeSource := strings.Repeat("//comment\n", 100000) // Should be within 1MB limit
+	_, err = shader.CompileShader(largeSource, shader.VertexShader)
+	if err == nil {
+		t.Log("Large shader compilation attempted (may fail due to syntax)")
+	}
+}
+
+func TestProgramValidation(t *testing.T) {
+	// Test program creation with no shaders
+	_, err := shader.CreateProgram()
+	if err == nil {
+		t.Error("Expected error when creating program with no shaders")
+	}
+
+	// Test program creation with nil shader
+	_, err = shader.CreateProgram(nil)
+	if err == nil {
+		t.Error("Expected error when creating program with nil shader")
+	}
+
+	// Test program creation with only vertex shader (missing fragment)
+	vertexSource := `#version 410 core
+layout(location = 0) in vec3 aPosition;
+void main() {
+    gl_Position = vec4(aPosition, 1.0);
+}`
+
+	vertexShader, err := shader.CompileShader(vertexSource, shader.VertexShader)
+	if err != nil {
+		t.Fatal("Failed to compile vertex shader:", err)
+	}
+	defer vertexShader.Delete()
+
+	_, err = shader.CreateProgram(vertexShader)
+	if err == nil {
+		t.Error("Expected error when creating program with only vertex shader")
+	}
+}
+
+func TestUniformValidation(t *testing.T) {
+	vertexSource := `#version 410 core
+layout(location = 0) in vec3 aPosition;
+uniform mat4 uMatrix;
+void main() {
+    gl_Position = uMatrix * vec4(aPosition, 1.0);
+}`
+
+	fragmentSource := `#version 410 core
+uniform float uFloat;
+uniform vec3 uVec3;
+out vec4 fragColor;
+void main() {
+    fragColor = vec4(uVec3 * uFloat, 1.0);
+}`
+
+	vertexShader, err := shader.CompileShader(vertexSource, shader.VertexShader)
+	if err != nil {
+		t.Fatal("Failed to compile vertex shader:", err)
+	}
+	defer vertexShader.Delete()
+
+	fragmentShader, err := shader.CompileShader(fragmentSource, shader.FragmentShader)
+	if err != nil {
+		t.Fatal("Failed to compile fragment shader:", err)
+	}
+	defer fragmentShader.Delete()
+
+	program, err := shader.CreateProgram(vertexShader, fragmentShader)
+	if err != nil {
+		t.Fatal("Failed to create program:", err)
+	}
+	defer program.Delete()
+
+	// Test invalid uniform location handling
+	err = program.SetUniform1f(-1, 1.0)
+	if err == nil {
+		t.Error("Expected error for invalid uniform location in SetUniform1f")
+	}
+
+	err = program.SetUniform3f(-1, 1.0, 2.0, 3.0)
+	if err == nil {
+		t.Error("Expected error for invalid uniform location in SetUniform3f")
+	}
+
+	// Test nil matrix
+	err = program.SetUniformMatrix4fv(0, nil)
+	if err == nil {
+		t.Error("Expected error for nil matrix in SetUniformMatrix4fv")
 	}
 }

@@ -119,6 +119,11 @@ func DefaultState() *State {
 type Pipeline struct {
 	currentState *State
 	stateStack   []*State
+	// Cache to avoid redundant state changes
+	lastProgramID  uint32
+	lastBlendState bool
+	lastDepthState bool
+	lastCullState  bool
 }
 
 // New creates a new rendering pipeline
@@ -129,43 +134,64 @@ func New() *Pipeline {
 	}
 }
 
-// SetState sets the complete pipeline state
+// SetState sets the complete pipeline state with optimized state changes
 func (p *Pipeline) SetState(state *State) error {
 	if state == nil {
 		return fmt.Errorf("state cannot be nil")
 	}
 
-	// Apply shader program
-	if state.Program != nil {
+	// Apply shader program only if changed
+	if state.Program != nil && (p.lastProgramID != state.Program.ID) {
 		state.Program.Use()
+		p.lastProgramID = state.Program.ID
 	}
 
-	// Apply blending state
-	if state.BlendEnabled {
-		gl.Enable(gl.BLEND)
+	// Apply blending state only if changed
+	if p.lastBlendState != state.BlendEnabled {
+		if state.BlendEnabled {
+			gl.Enable(gl.BLEND)
+			gl.BlendFunc(uint32(state.BlendSrc), uint32(state.BlendDst))
+		} else {
+			gl.Disable(gl.BLEND)
+		}
+		p.lastBlendState = state.BlendEnabled
+	} else if state.BlendEnabled {
+		// Update blend function even if blend is already enabled
 		gl.BlendFunc(uint32(state.BlendSrc), uint32(state.BlendDst))
-	} else {
-		gl.Disable(gl.BLEND)
 	}
 
-	// Apply depth state
-	if state.DepthEnabled {
-		gl.Enable(gl.DEPTH_TEST)
+	// Apply depth state only if changed
+	if p.lastDepthState != state.DepthEnabled {
+		if state.DepthEnabled {
+			gl.Enable(gl.DEPTH_TEST)
+			gl.DepthFunc(uint32(state.DepthFunc))
+			gl.DepthMask(state.DepthWrite)
+		} else {
+			gl.Disable(gl.DEPTH_TEST)
+		}
+		p.lastDepthState = state.DepthEnabled
+	} else if state.DepthEnabled {
+		// Update depth function and mask even if depth test is already enabled
 		gl.DepthFunc(uint32(state.DepthFunc))
 		gl.DepthMask(state.DepthWrite)
-	} else {
-		gl.Disable(gl.DEPTH_TEST)
 	}
 
-	// Apply culling state
-	if state.CullEnabled && state.CullFace != CullNone {
-		gl.Enable(gl.CULL_FACE)
+	// Apply culling state only if changed
+	cullStateChanged := p.lastCullState != state.CullEnabled
+	if cullStateChanged {
+		if state.CullEnabled && state.CullFace != CullNone {
+			gl.Enable(gl.CULL_FACE)
+			gl.CullFace(uint32(state.CullFace))
+		} else {
+			gl.Disable(gl.CULL_FACE)
+		}
+		p.lastCullState = state.CullEnabled
+	} else if state.CullEnabled && state.CullFace != CullNone {
+		// Update cull face even if culling is already enabled
 		gl.CullFace(uint32(state.CullFace))
-	} else {
-		gl.Disable(gl.CULL_FACE)
 	}
 
-	// Apply viewport
+	// Always apply viewport (relatively cheap and may change frequently)
 	gl.Viewport(state.ViewportX, state.ViewportY, state.ViewportWidth, state.ViewportHeight)
 
 	// Apply polygon mode
@@ -206,13 +232,15 @@ func (p *Pipeline) PopState() error {
 	return p.SetState(state)
 }
 
-// SetProgram sets the shader program
+// SetProgram sets the shader program with caching
 func (p *Pipeline) SetProgram(program *shader.Program) {
-	if p.currentState.Program != program {
+	if program != nil && p.lastProgramID != program.ID {
 		p.currentState.Program = program
-		if program != nil {
-			program.Use()
-		}
+		program.Use()
+		p.lastProgramID = program.ID
+	} else if program == nil && p.lastProgramID != 0 {
+		p.currentState.Program = nil
+		p.lastProgramID = 0
 	}
 }
 
