@@ -1,6 +1,6 @@
-# GoGL - Professional OpenGL Shader Library for Go
+# GoGL - OpenGL Shader Library for Go
 
-A high-performance, cross-platform OpenGL shader library written in Go, designed for clean APIs, comprehensive error handling, and professional code quality. Ready for expansion with solid foundation.
+GoGL is a Go module that wraps OpenGL shader/program management with a few focused examples. It targets developers who need to experiment with shaders in Go without adopting a full engine. The codebase currently offers a basic rendering pipeline, shader helpers, and example applications.
 
 ## 🚀 Quick Start
 
