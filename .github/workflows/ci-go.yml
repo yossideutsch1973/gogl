@@ -9,5 +9,6 @@ jobs:
         with:
           go-version: '1.22.x'
       - name: Install X11 and OpenGL dependencies
-        run: sudo apt-get update && sudo apt-get install -y libx11-dev libgl1-mesa-dev xorg-dev
-      - run: go test ./...
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev libgl1-mesa-dev xorg-dev xvfb
+      - name: Run tests with virtual framebuffer
+        run: xvfb-run -a go test ./...
