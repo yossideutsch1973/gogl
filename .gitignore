@@ -50,6 +50,13 @@ vendor/
 /cmd/examples/pipeline/pipeline
 /cmd/examples/platform/platform
 
+# Compiled binaries at root
+/basic
+/compute
+/geometry
+/pipeline
+/platform
+
 # Development tools
 /tools/
 /scripts/
