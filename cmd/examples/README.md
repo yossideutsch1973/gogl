@@ -4,6 +4,16 @@ This directory contains example applications demonstrating the capabilities of t
 
 ## Examples Overview
 
+### 0. Shader Test (`shader_test/`)
+- **Purpose**: Validates all shaders in the library compile and link correctly
+- **Features**:
+  - Tests 8 vertex/fragment shader pairs
+  - Tests 5 geometry shaders
+  - Tests 4 post-processing shaders
+  - Reports pass/fail for each shader
+- **OpenGL Requirements**: 4.1+
+- **Run**: `go run cmd/examples/shader_test/main.go`
+
 ### 1. Basic Example (`basic/`)
 - **Purpose**: Demonstrates fundamental shader compilation and rendering
 - **Features**: 
