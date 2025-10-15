@@ -12,6 +12,17 @@ go run cmd/examples/basic/main.go          # Basic triangle rendering (✅ WORKI
 
 **Expected Output**: Rotating triangle with time-based color animation. Verified working on macOS Apple Silicon (OpenGL 4.1).
 
+## 🎨 Comprehensive Shader Library
+
+GoGL includes a production-ready collection of **28 GLSL shaders** covering common rendering scenarios:
+
+- **7 Vertex Shaders**: Basic, textured, Phong lighting, flat color, skybox, screen quad, standard PBR
+- **14 Fragment Shaders**: Lighting models, post-processing effects, color adjustments
+- **5 Geometry Shaders**: Point expansion, wireframe, normal visualization, explosion effects
+- **2 Compute Shaders**: Particle simulation, image processing (OpenGL 4.3+)
+
+See [`shaders/README.md`](shaders/README.md) for complete documentation and usage examples.
+
 ## 📊 Project Status - Ready for Handoff
 
 ### ✅ **Working Foundation** 
@@ -51,11 +62,15 @@ go run cmd/examples/basic/main.go          # Basic triangle rendering (✅ WORKI
 gogl/
 ├── cmd/examples/basic/     # ✅ Working triangle demo
 ├── pkg/shader/            # ✅ Core shader system (implemented)
-├── pkg/pipeline/          # 🚧 Rendering state (needs implementation)
-├── pkg/resource/          # 🚧 Buffer management (needs implementation)  
-├── internal/platform/     # 🚧 Capability detection (needs implementation)
-├── shaders/              # ✅ GLSL source files
-└── tests/unit/           # ⚠️ Has compilation errors to fix
+├── pkg/pipeline/          # ✅ Rendering state management
+├── pkg/resource/          # ✅ Buffer/texture lifecycle management  
+├── internal/platform/     # ✅ Capability detection system
+├── shaders/              # ✅ Comprehensive GLSL shader library
+│   ├── vertex/           # 7 vertex shaders
+│   ├── fragment/         # 14 fragment shaders
+│   ├── geometry/         # 5 geometry shaders
+│   └── compute/          # 2 compute shaders (OpenGL 4.3+)
+└── tests/unit/           # ✅ Complete test suite
 ```
 
 ## 💻 Development Environment
