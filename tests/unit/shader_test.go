@@ -12,6 +12,15 @@ import (
 
 var testWindow *glfw.Window
 
+const (
+	// testVertexShaderSource is a simple vertex shader used across multiple tests
+	testVertexShaderSource = `#version 410 core
+layout(location = 0) in vec3 aPosition;
+void main() {
+    gl_Position = vec4(aPosition, 1.0);
+}`
+)
+
 // TestMain sets up OpenGL context once for all tests
 func TestMain(m *testing.M) {
 	// Initialize GLFW
@@ -48,13 +57,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestCompileVertexShader(t *testing.T) {
-	source := `#version 410 core
-layout(location = 0) in vec3 aPosition;
-void main() {
-    gl_Position = vec4(aPosition, 1.0);
-}`
-
-	compiledShader, err := shader.CompileShader(source, shader.VertexShader)
+	compiledShader, err := shader.CompileShader(testVertexShaderSource, shader.VertexShader)
 	if err != nil {
 		t.Fatal("Failed to compile vertex shader:", err)
 	}
@@ -103,19 +106,13 @@ invalid syntax here
 }
 
 func TestCreateProgram(t *testing.T) {
-	vertexSource := `#version 410 core
-layout(location = 0) in vec3 aPosition;
-void main() {
-    gl_Position = vec4(aPosition, 1.0);
-}`
-
 	fragmentSource := `#version 410 core
 out vec4 fragColor;
 void main() {
     fragColor = vec4(1.0, 0.0, 0.0, 1.0);
 }`
 
-	vertexShader, err := shader.CompileShader(vertexSource, shader.VertexShader)
+	vertexShader, err := shader.CompileShader(testVertexShaderSource, shader.VertexShader)
 	if err != nil {
 		t.Fatal("Failed to compile vertex shader:", err)
 	}
@@ -223,13 +220,7 @@ func TestProgramValidation(t *testing.T) {
 	}
 
 	// Test program creation with only vertex shader (missing fragment)
-	vertexSource := `#version 410 core
-layout(location = 0) in vec3 aPosition;
-void main() {
-    gl_Position = vec4(aPosition, 1.0);
-}`
-
-	vertexShader, err := shader.CompileShader(vertexSource, shader.VertexShader)
+	vertexShader, err := shader.CompileShader(testVertexShaderSource, shader.VertexShader)
 	if err != nil {
 		t.Fatal("Failed to compile vertex shader:", err)
 	}
