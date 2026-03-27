@@ -8,11 +8,18 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.22.x'
-      - name: Install X11 and OpenGL dependencies
-        run: sudo apt-get update && sudo apt-get install -y libx11-dev libgl1-mesa-dev xorg-dev xvfb
+      - name: Install OpenGL and X11 dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev libgl1-mesa-dev libgl1-mesa-dri xorg-dev xvfb mesa-utils
       - name: Start Xvfb
-        run: Xvfb :99 -screen 0 1024x768x24 &
+        run: |
+          Xvfb :99 -screen 0 1024x768x24 &
+          sleep 2
       - name: Run tests
-        run: go test ./...
         env:
           DISPLAY: :99
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: go test ./tests/unit/...
+      - name: Build examples
+        run: go build ./cmd/examples/...

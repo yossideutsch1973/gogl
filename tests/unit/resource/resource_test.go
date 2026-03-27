@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
-	"github.com/yossideutsch/gogl/pkg/resource"
+	"github.com/yossideutsch1973/gogl/pkg/resource"
 )
 
 var testWindow *glfw.Window

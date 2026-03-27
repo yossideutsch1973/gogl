@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
-	"github.com/yossideutsch/gogl/pkg/shader"
+	"github.com/yossideutsch1973/gogl/pkg/shader"
 )
 
 // BlendFunc represents OpenGL blend functions
