@@ -4,7 +4,19 @@ This directory contains example applications demonstrating the capabilities of t
 
 ## Examples Overview
 
-### 0. Shader Test (`shader_test/`)
+### 0. Showcase (`showcase/`)
+- **Purpose**: Flagship visual demo — a fullscreen raymarched scene rendered with the gogl pipeline. All geometry lives in a single fragment shader (`shaders/fragment/raymarch_showcase.frag`); the host program just drives one triangle.
+- **Features**:
+  - Signed-distance-field sphere + torus on an infinite checkered plane
+  - Soft shadows, Phong lighting, distance fog, gamma correction
+  - Animated orbit camera
+  - `-screenshot path.png` flag renders one off-screen frame and exits (used by CI to produce the README image)
+- **OpenGL Requirements**: 4.1+
+- **Run**:
+  - Interactive: `go run ./cmd/examples/showcase`
+  - Headless PNG: `go run ./cmd/examples/showcase -screenshot out.png -width 1280 -height 720 -time 12.0`
+
+### 1. Shader Test (`shader_test/`)
 - **Purpose**: Validates all shaders in the library compile and link correctly
 - **Features**:
   - Tests 8 vertex/fragment shader pairs
@@ -14,7 +26,7 @@ This directory contains example applications demonstrating the capabilities of t
 - **OpenGL Requirements**: 4.1+
 - **Run**: `go run cmd/examples/shader_test/main.go`
 
-### 1. Basic Example (`basic/`)
+### 2. Basic Example (`basic/`)
 - **Purpose**: Demonstrates fundamental shader compilation and rendering
 - **Features**: 
   - Vertex and fragment shader compilation
@@ -24,7 +36,7 @@ This directory contains example applications demonstrating the capabilities of t
 - **OpenGL Requirements**: 4.1+
 - **Run**: `go run cmd/examples/basic/main.go`
 
-### 2. Geometry Shader Example (`geometry/`)
+### 3. Geometry Shader Example (`geometry/`)
 - **Purpose**: Showcases geometry shader capabilities for expanding primitives
 - **Features**:
   - Point-to-quad expansion (billboard particles)
@@ -34,7 +46,7 @@ This directory contains example applications demonstrating the capabilities of t
 - **OpenGL Requirements**: 3.2+ (geometry shaders)
 - **Run**: `go run cmd/examples/geometry/main.go`
 
-### 3. Compute Shader Example (`compute/`)
+### 4. Compute Shader Example (`compute/`)
 - **Purpose**: Demonstrates GPU compute capabilities with automatic fallback
 - **Features**:
   - GPU-based particle system (when compute shaders available)
@@ -45,7 +57,7 @@ This directory contains example applications demonstrating the capabilities of t
 - **OpenGL Requirements**: 4.3+ for GPU compute, 4.1+ for CPU fallback
 - **Run**: `go run cmd/examples/compute/main.go`
 
-### 4. Pipeline Example (`pipeline/`)
+### 5. Pipeline Example (`pipeline/`)
 - **Purpose**: Shows advanced rendering pipeline state management
 - **Features**:
   - Multiple render passes
@@ -55,7 +67,7 @@ This directory contains example applications demonstrating the capabilities of t
 - **OpenGL Requirements**: 4.1+
 - **Run**: `go run cmd/examples/pipeline/main.go`
 
-### 5. Platform Detection (`platform/`)
+### 6. Platform Detection (`platform/`)
 - **Purpose**: Analyzes system capabilities and provides development guidance
 - **Features**:
   - Comprehensive OpenGL feature detection

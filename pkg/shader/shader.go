@@ -40,17 +40,23 @@ package shader
 import (
 	"fmt"
 	"os"
-	"sync"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-// Pool for reusing byte slices to reduce allocations
-var logPool = sync.Pool{
-	New: func() interface{} {
-		return make([]byte, 0, 512) // Start with 512 bytes capacity
-	},
+// readInfoLog reads the info log for either a shader or program object.
+// It always reads at least one byte to avoid OpenGL UB and trims the
+// trailing NUL.
+func readInfoLog(length int32, fetch func(buf []byte)) string {
+	if length <= 0 {
+		return ""
+	}
+	buf := make([]byte, length)
+	fetch(buf)
+	// OpenGL writes a NUL-terminated string of `length` bytes including
+	// the NUL; strip it.
+	return string(buf[:length-1])
 }
 
 // checkGLError checks for OpenGL errors and returns a descriptive error
@@ -149,21 +155,12 @@ func CompileShader(source string, shaderType ShaderType) (*Shader, error) {
 	if status == gl.FALSE {
 		var logLength int32
 		gl.GetShaderiv(shaderID, gl.INFO_LOG_LENGTH, &logLength)
-
-		// Use pooled buffer to reduce allocations
-		buf := logPool.Get().([]byte)
-		defer logPool.Put(buf[:0]) // Reset length but keep capacity
-		
-		if cap(buf) < int(logLength) {
-			buf = make([]byte, logLength)
-		}
-		buf = buf[:logLength]
-
-		gl.GetShaderInfoLog(shaderID, logLength, nil, (*uint8)(&buf[0]))
-
+		log := readInfoLog(logLength, func(buf []byte) {
+			gl.GetShaderInfoLog(shaderID, logLength, nil, &buf[0])
+		})
 		gl.DeleteShader(shaderID)
-		return nil, fmt.Errorf("failed to compile %s shader: %s", 
-			getShaderTypeName(shaderType), string(buf[:logLength-1])) // Remove null terminator
+		return nil, fmt.Errorf("failed to compile %s shader: %s",
+			getShaderTypeName(shaderType), log)
 	}
 
 	return &Shader{
@@ -241,20 +238,11 @@ func CreateProgram(shaders ...*Shader) (*Program, error) {
 	if status == gl.FALSE {
 		var logLength int32
 		gl.GetProgramiv(programID, gl.INFO_LOG_LENGTH, &logLength)
-
-		// Use pooled buffer to reduce allocations
-		buf := logPool.Get().([]byte)
-		defer logPool.Put(buf[:0])
-		
-		if cap(buf) < int(logLength) {
-			buf = make([]byte, logLength)
-		}
-		buf = buf[:logLength]
-
-		gl.GetProgramInfoLog(programID, logLength, nil, (*uint8)(&buf[0]))
-
+		log := readInfoLog(logLength, func(buf []byte) {
+			gl.GetProgramInfoLog(programID, logLength, nil, &buf[0])
+		})
 		program.Delete()
-		return nil, fmt.Errorf("failed to link program: %s", string(buf[:logLength-1]))
+		return nil, fmt.Errorf("failed to link program: %s", log)
 	}
 
 	return program, nil
@@ -316,19 +304,10 @@ func (p *Program) Validate() error {
 	if status == gl.FALSE {
 		var logLength int32
 		gl.GetProgramiv(p.ID, gl.INFO_LOG_LENGTH, &logLength)
-
-		// Use pooled buffer to reduce allocations
-		buf := logPool.Get().([]byte)
-		defer logPool.Put(buf[:0])
-		
-		if cap(buf) < int(logLength) {
-			buf = make([]byte, logLength)
-		}
-		buf = buf[:logLength]
-
-		gl.GetProgramInfoLog(p.ID, logLength, nil, (*uint8)(&buf[0]))
-
-		return fmt.Errorf("program validation failed: %s", string(buf[:logLength-1]))
+		log := readInfoLog(logLength, func(buf []byte) {
+			gl.GetProgramInfoLog(p.ID, logLength, nil, &buf[0])
+		})
+		return fmt.Errorf("program validation failed: %s", log)
 	}
 
 	return nil

@@ -591,11 +591,11 @@ void main() {
 	gl.EnableVertexAttribArray(0)
 
 	// Color attribute
-	gl.VertexAttribPointer(1, 4, gl.FLOAT, false, 7*4, gl.PtrOffset(2*4))
+	gl.VertexAttribPointerWithOffset(1, 4, gl.FLOAT, false, 7*4, 2*4)
 	gl.EnableVertexAttribArray(1)
 
 	// Size attribute
-	gl.VertexAttribPointer(2, 1, gl.FLOAT, false, 7*4, gl.PtrOffset(6*4))
+	gl.VertexAttribPointerWithOffset(2, 1, gl.FLOAT, false, 7*4, 6*4)
 	gl.EnableVertexAttribArray(2)
 
 	window.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {

@@ -1,3 +1,22 @@
+// Package resource manages the lifetime of OpenGL GPU resources: buffers
+// (vertex, index, uniform, shader-storage), vertex array objects, textures,
+// and combined meshes. Every resource exposes a [Delete] method that releases
+// the underlying GL handle and zeroes the local ID so double-deletes are
+// safe.
+//
+// The package also provides:
+//
+//   - [VertexLayout] — a small DSL for describing interleaved vertex
+//     attributes and applying them to a [VertexArray].
+//   - [Mesh] — bundles a [VertexBuffer], optional [IndexBuffer] and
+//     [VertexArray] into a single drawable unit.
+//   - [BufferPool] — a simple pool that reuses buffers by target and usage
+//     to reduce GL allocations in render hot paths.
+//   - [TextureManager] — caches loaded textures by name.
+//
+// Most operations require an active OpenGL 4.1+ context on the calling
+// goroutine. Buffers are unbound after creation so they do not leak into
+// surrounding state.
 package resource
 
 import (
