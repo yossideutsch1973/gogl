@@ -115,7 +115,7 @@ func main() {
 	gl.EnableVertexAttribArray(0)
 
 	// Color attribute (location 1)
-	gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 6*4, gl.PtrOffset(3*4))
+	gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, 6*4, 3*4)
 	gl.EnableVertexAttribArray(1)
 
 	// Unbind VAO
@@ -128,7 +128,7 @@ func main() {
 	// Setup projection matrix
 	projection := mgl32.Perspective(mgl32.DegToRad(45.0), float32(windowWidth)/float32(windowHeight), 0.1, 100.0)
 	view := mgl32.LookAtV(mgl32.Vec3{0, 0, 3}, mgl32.Vec3{0, 0, 0}, mgl32.Vec3{0, 1, 0})
-	model := mgl32.Ident4()
+	var model mgl32.Mat4
 
 	// Enable V-Sync
 	glfw.SwapInterval(1)

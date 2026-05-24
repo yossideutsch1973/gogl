@@ -92,21 +92,21 @@ func (va *VertexArray) AddAttribute(attr VertexAttribute) {
 	// Configure the attribute
 	switch attr.Type {
 	case Float:
-		gl.VertexAttribPointer(
+		gl.VertexAttribPointerWithOffset(
 			attr.Location,
 			attr.Size,
 			uint32(attr.Type),
 			attr.Normalized,
 			attr.Stride,
-			gl.PtrOffset(int(attr.Offset)),
+			attr.Offset,
 		)
 	case Int, UInt, Byte, UByte, Short, UShort:
-		gl.VertexAttribIPointer(
+		gl.VertexAttribIPointerWithOffset(
 			attr.Location,
 			attr.Size,
 			uint32(attr.Type),
 			attr.Stride,
-			gl.PtrOffset(int(attr.Offset)),
+			attr.Offset,
 		)
 	}
 
@@ -150,7 +150,7 @@ func (va *VertexArray) Delete() {
 func (va *VertexArray) Draw(mode uint32, count int32, offset int32) {
 	va.Bind()
 	if va.IBO != nil {
-		gl.DrawElements(mode, count, va.IBO.IndexType, gl.PtrOffset(int(offset)*4))
+		gl.DrawElementsWithOffset(mode, count, va.IBO.IndexType, uintptr(offset)*4)
 	} else {
 		gl.DrawArrays(mode, offset, count)
 	}
@@ -169,6 +169,9 @@ func (va *VertexArray) DrawIndexed(mode uint32) {
 func (va *VertexArray) DrawInstanced(mode uint32, count int32, instanceCount int32, offset int32) {
 	va.Bind()
 	if va.IBO != nil {
+		// go-gl exposes no WithOffset variant for the instanced overload at
+		// this profile level; gl.PtrOffset is the documented bridge.
+		//lint:ignore SA1019 no WithOffset overload for DrawElementsInstanced in v4.1-core
 		gl.DrawElementsInstanced(mode, count, va.IBO.IndexType, gl.PtrOffset(int(offset)*4), instanceCount)
 	} else {
 		gl.DrawArraysInstanced(mode, offset, count, instanceCount)

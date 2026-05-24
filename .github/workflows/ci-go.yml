@@ -1,25 +1,94 @@
 name: ci-go
 on: [push, pull_request]
+
 jobs:
-  test:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: '1.22.x'
-      - name: Install OpenGL and X11 dependencies
+      - name: Install OpenGL and X11 dev headers
         run: |
           sudo apt-get update
-          sudo apt-get install -y libx11-dev libgl1-mesa-dev libgl1-mesa-dri xorg-dev xvfb mesa-utils
+          sudo apt-get install -y libx11-dev libgl1-mesa-dev libxcursor-dev \
+            libxinerama-dev libxi-dev libxrandr-dev libxxf86vm-dev pkg-config
+      - name: go vet
+        run: go vet ./...
+      - name: staticcheck
+        uses: dominikh/staticcheck-action@v1
+        with:
+          version: "2024.1.1"
+          install-go: false
+
+  test-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+      - name: Install OpenGL, X11 and Xvfb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev libgl1-mesa-dev libgl1-mesa-dri \
+            libxcursor-dev libxinerama-dev libxi-dev libxrandr-dev libxxf86vm-dev \
+            xorg-dev xvfb mesa-utils pkg-config
       - name: Start Xvfb
         run: |
-          Xvfb :99 -screen 0 1024x768x24 &
+          Xvfb :99 -screen 0 1280x720x24 -nolisten tcp >/tmp/xvfb.log 2>&1 &
           sleep 2
       - name: Run tests
         env:
           DISPLAY: :99
           LIBGL_ALWAYS_SOFTWARE: "1"
+          MESA_GL_VERSION_OVERRIDE: "4.1"
+          MESA_GLSL_VERSION_OVERRIDE: "410"
         run: go test ./tests/unit/...
-      - name: Build examples
+      - name: Build all examples
         run: go build ./cmd/examples/...
+      - name: Render showcase screenshot
+        env:
+          DISPLAY: :99
+          LIBGL_ALWAYS_SOFTWARE: "1"
+          MESA_GL_VERSION_OVERRIDE: "4.1"
+          MESA_GLSL_VERSION_OVERRIDE: "410"
+        run: |
+          go run ./cmd/examples/showcase \
+            -screenshot docs/showcase-ci.png \
+            -width 1280 -height 720 -time 12.0
+      - name: Upload screenshot artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: showcase-screenshot
+          path: docs/showcase-ci.png
+
+  test-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+      # macOS ships OpenGL with the system; GLFW links against Cocoa.
+      # GitHub-hosted runners have no display, so we verify build only.
+      - name: Build packages and examples
+        run: |
+          go build ./...
+          go build ./cmd/examples/...
+
+  test-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+      # Windows runners have MinGW preinstalled, providing the CGO
+      # toolchain go-gl needs. As on macOS, no display means build-only.
+      - name: Build packages and examples
+        shell: bash
+        run: |
+          go build ./...
+          go build ./cmd/examples/...

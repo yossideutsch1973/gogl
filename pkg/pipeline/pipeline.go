@@ -1,3 +1,30 @@
+// Package pipeline manages OpenGL rendering state with a builder pattern and
+// state caching that elides redundant GL calls when the requested state
+// matches the last-applied state.
+//
+// The package exposes three core types:
+//
+//   - [State] is a value-type snapshot of every piece of pipeline state the
+//     package tracks (program, blend, depth, cull, viewport, polygon mode,
+//     primitive).
+//   - [Builder] provides a fluent API for assembling a [State].
+//   - [Pipeline] applies a [State] to the current GL context, caching the
+//     last applied values to skip no-op changes, and supports a push/pop
+//     stack for scoped state changes.
+//
+// Example:
+//
+//	state := pipeline.NewBuilder().
+//	    WithProgram(prog).
+//	    WithDepthTest(true, true, pipeline.DepthLess).
+//	    WithBlending(true, pipeline.BlendSrcAlpha, pipeline.BlendOneMinusSrcAlpha).
+//	    WithViewport(0, 0, 1920, 1080).
+//	    Build()
+//
+//	p := pipeline.New()
+//	if err := p.SetState(state); err != nil {
+//	    log.Fatal(err)
+//	}
 package pipeline
 
 import (

@@ -2,6 +2,10 @@
 
 A high-performance, cross-platform OpenGL shader library for Go with clean APIs, comprehensive error handling, and a production-ready GLSL shader collection.
 
+![GoGL showcase: a fragment-shader-only raymarched scene rendered through the gogl pipeline](docs/showcase.png)
+
+> The screenshot above is generated headlessly in CI from a single fragment shader (`shaders/fragment/raymarch_showcase.frag`) driven by ~150 lines of host code in [`cmd/examples/showcase`](cmd/examples/showcase). Reproduce locally with `go run ./cmd/examples/showcase`.
+
 ## Features
 
 - **Shader Management** - Compile, link, and validate vertex, fragment, geometry, and compute shaders with robust error reporting
@@ -54,10 +58,11 @@ func main() {
 }
 ```
 
-Run the included example:
+Run the included examples:
 
 ```bash
-go run cmd/examples/basic/main.go
+go run ./cmd/examples/basic      # spinning interpolated-color triangle
+go run ./cmd/examples/showcase   # fullscreen raymarched scene (pictured above)
 ```
 
 ## Shader Library
@@ -112,13 +117,13 @@ cmd/examples/    Working demo applications
 
 ## Platform Support
 
-| Platform | OpenGL | Status |
-|----------|--------|--------|
-| macOS | 4.1 | Tested (Apple M4 Max) |
-| Linux | 4.6 | Supported |
-| Windows | 4.6 | Supported |
+| Platform | OpenGL | CI |
+|----------|--------|-------|
+| Linux    | 4.1 (Mesa llvmpipe) | tests + screenshot render under Xvfb |
+| macOS    | 4.1 | build verified on `macos-latest` |
+| Windows  | 4.1 | build verified on `windows-latest` |
 
-**Note:** macOS is limited to OpenGL 4.1 (compute shaders unavailable). The library uses OpenGL 4.1 as its baseline for maximum compatibility.
+**Note:** macOS is limited to OpenGL 4.1 (compute shaders unavailable). The library uses OpenGL 4.1 as its baseline for maximum compatibility. GitHub-hosted macOS/Windows runners have no display, so those CI jobs build-verify only; the Linux job runs the full unit-test suite and renders the showcase PNG as a build artifact.
 
 ## Testing
 
