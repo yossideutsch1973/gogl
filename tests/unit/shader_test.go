@@ -2,6 +2,7 @@ package shader_test
 
 import (
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -13,7 +14,6 @@ import (
 var testWindow *glfw.Window
 
 const (
-	// testVertexShaderSource is a simple vertex shader used across multiple tests
 	testVertexShaderSource = `#version 410 core
 layout(location = 0) in vec3 aPosition;
 void main() {
@@ -21,22 +21,20 @@ void main() {
 }`
 )
 
-// TestMain sets up OpenGL context once for all tests
 func TestMain(m *testing.M) {
-	// Initialize GLFW
+	runtime.LockOSThread()
+
 	if err := glfw.Init(); err != nil {
 		panic("Failed to initialize GLFW: " + err.Error())
 	}
 	defer glfw.Terminate()
 
-	// Configure OpenGL context
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	glfw.WindowHint(glfw.Visible, glfw.False) // Keep window hidden
+	glfw.WindowHint(glfw.Visible, glfw.False)
 
-	// Create window
 	var err error
 	testWindow, err = glfw.CreateWindow(100, 100, "Test", nil, nil)
 	if err != nil {
@@ -44,19 +42,30 @@ func TestMain(m *testing.M) {
 	}
 	defer testWindow.Destroy()
 
-	// Make context current
 	testWindow.MakeContextCurrent()
 
-	// Initialize OpenGL
 	if err := gl.Init(); err != nil {
 		panic("Failed to initialize OpenGL: " + err.Error())
 	}
 
-	// Run tests
+	glfw.DetachCurrentContext()
+	runtime.UnlockOSThread()
+
 	os.Exit(m.Run())
 }
 
+func glSetup(t *testing.T) {
+	t.Helper()
+	runtime.LockOSThread()
+	testWindow.MakeContextCurrent()
+	t.Cleanup(func() {
+		glfw.DetachCurrentContext()
+		runtime.UnlockOSThread()
+	})
+}
+
 func TestCompileVertexShader(t *testing.T) {
+	glSetup(t)
 	compiledShader, err := shader.CompileShader(testVertexShaderSource, shader.VertexShader)
 	if err != nil {
 		t.Fatal("Failed to compile vertex shader:", err)
@@ -73,6 +82,7 @@ func TestCompileVertexShader(t *testing.T) {
 }
 
 func TestCompileFragmentShader(t *testing.T) {
+	glSetup(t)
 	source := `#version 410 core
 out vec4 fragColor;
 void main() {
@@ -95,6 +105,7 @@ void main() {
 }
 
 func TestCompileInvalidShader(t *testing.T) {
+	glSetup(t)
 	source := `#version 410 core
 invalid syntax here
 `
@@ -106,6 +117,7 @@ invalid syntax here
 }
 
 func TestCreateProgram(t *testing.T) {
+	glSetup(t)
 	fragmentSource := `#version 410 core
 out vec4 fragColor;
 void main() {
@@ -134,14 +146,13 @@ void main() {
 		t.Error("Program ID should not be 0")
 	}
 
-	// Test program validation
 	if err := program.Validate(); err != nil {
-		// Note: Program validation may fail without a VAO bound, which is expected
 		t.Log("Program validation warning:", err)
 	}
 }
 
 func TestGetUniformLocation(t *testing.T) {
+	glSetup(t)
 	vertexSource := `#version 410 core
 layout(location = 0) in vec3 aPosition;
 uniform mat4 uModelViewProjection;
@@ -190,16 +201,14 @@ void main() {
 	}
 }
 
-// TestInputValidation tests the new input validation features
 func TestInputValidation(t *testing.T) {
-	// Test empty shader source
+	glSetup(t)
 	_, err := shader.CompileShader("", shader.VertexShader)
 	if err == nil {
 		t.Error("Expected error for empty shader source")
 	}
 
-	// Test very large shader source (mock the limit)
-	largeSource := strings.Repeat("//comment\n", 100000) // Should be within 1MB limit
+	largeSource := strings.Repeat("//comment\n", 100000)
 	_, err = shader.CompileShader(largeSource, shader.VertexShader)
 	if err == nil {
 		t.Log("Large shader compilation attempted (may fail due to syntax)")
@@ -207,19 +216,17 @@ func TestInputValidation(t *testing.T) {
 }
 
 func TestProgramValidation(t *testing.T) {
-	// Test program creation with no shaders
+	glSetup(t)
 	_, err := shader.CreateProgram()
 	if err == nil {
 		t.Error("Expected error when creating program with no shaders")
 	}
 
-	// Test program creation with nil shader
 	_, err = shader.CreateProgram(nil)
 	if err == nil {
 		t.Error("Expected error when creating program with nil shader")
 	}
 
-	// Test program creation with only vertex shader (missing fragment)
 	vertexShader, err := shader.CompileShader(testVertexShaderSource, shader.VertexShader)
 	if err != nil {
 		t.Fatal("Failed to compile vertex shader:", err)
@@ -233,6 +240,7 @@ func TestProgramValidation(t *testing.T) {
 }
 
 func TestUniformValidation(t *testing.T) {
+	glSetup(t)
 	vertexSource := `#version 410 core
 layout(location = 0) in vec3 aPosition;
 uniform mat4 uMatrix;
@@ -266,7 +274,6 @@ void main() {
 	}
 	defer program.Delete()
 
-	// Test invalid uniform location handling
 	err = program.SetUniform1f(-1, 1.0)
 	if err == nil {
 		t.Error("Expected error for invalid uniform location in SetUniform1f")
@@ -277,7 +284,6 @@ void main() {
 		t.Error("Expected error for invalid uniform location in SetUniform3f")
 	}
 
-	// Test nil matrix
 	err = program.SetUniformMatrix4fv(0, nil)
 	if err == nil {
 		t.Error("Expected error for nil matrix in SetUniformMatrix4fv")
