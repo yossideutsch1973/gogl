@@ -2,6 +2,7 @@ package resource_test
 
 import (
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -12,20 +13,20 @@ import (
 var testWindow *glfw.Window
 
 func TestMain(m *testing.M) {
-	// Initialize GLFW
+	// GLFW requires init and window creation on a thread-locked goroutine.
+	runtime.LockOSThread()
+
 	if err := glfw.Init(); err != nil {
 		panic("Failed to initialize GLFW: " + err.Error())
 	}
 	defer glfw.Terminate()
 
-	// Configure OpenGL context
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 	glfw.WindowHint(glfw.Visible, glfw.False)
 
-	// Create window
 	var err error
 	testWindow, err = glfw.CreateWindow(100, 100, "Test", nil, nil)
 	if err != nil {
@@ -33,21 +34,36 @@ func TestMain(m *testing.M) {
 	}
 	defer testWindow.Destroy()
 
-	// Make context current
 	testWindow.MakeContextCurrent()
 
-	// Initialize OpenGL
 	if err := gl.Init(); err != nil {
 		panic("Failed to initialize OpenGL: " + err.Error())
 	}
 
-	// Run tests
+	// Release the context so test goroutines — which Go's test runner
+	// may schedule on a different OS thread — can acquire it.
+	glfw.DetachCurrentContext()
+	runtime.UnlockOSThread()
+
 	os.Exit(m.Run())
 }
 
+// glSetup re-acquires the GL context on the current OS thread.
+// Must be called at the start of every test that issues GL calls.
+func glSetup(t *testing.T) {
+	t.Helper()
+	runtime.LockOSThread()
+	testWindow.MakeContextCurrent()
+	t.Cleanup(func() {
+		glfw.DetachCurrentContext()
+		runtime.UnlockOSThread()
+	})
+}
+
 func TestVertexBufferCreation(t *testing.T) {
+	glSetup(t)
 	data := []float32{1.0, 2.0, 3.0, 4.0}
-	
+
 	vbo, err := resource.NewVertexBuffer(data, resource.StaticDraw)
 	if err != nil {
 		t.Fatal("Failed to create vertex buffer:", err)
@@ -68,8 +84,9 @@ func TestVertexBufferCreation(t *testing.T) {
 }
 
 func TestIndexBufferCreation(t *testing.T) {
+	glSetup(t)
 	data := []uint32{0, 1, 2, 3, 4, 5}
-	
+
 	ibo, err := resource.NewIndexBuffer(data, resource.StaticDraw)
 	if err != nil {
 		t.Fatal("Failed to create index buffer:", err)
@@ -90,8 +107,9 @@ func TestIndexBufferCreation(t *testing.T) {
 }
 
 func TestIndexBuffer16Creation(t *testing.T) {
+	glSetup(t)
 	data := []uint16{0, 1, 2, 3}
-	
+
 	ibo, err := resource.NewIndexBuffer16(data, resource.StaticDraw)
 	if err != nil {
 		t.Fatal("Failed to create 16-bit index buffer:", err)
@@ -108,8 +126,9 @@ func TestIndexBuffer16Creation(t *testing.T) {
 }
 
 func TestUniformBufferCreation(t *testing.T) {
-	size := 256 // UBO size
-	
+	glSetup(t)
+	size := 256
+
 	ubo, err := resource.NewUniformBuffer(size, resource.DynamicDraw)
 	if err != nil {
 		t.Fatal("Failed to create uniform buffer:", err)
@@ -130,6 +149,7 @@ func TestUniformBufferCreation(t *testing.T) {
 }
 
 func TestVertexArrayCreation(t *testing.T) {
+	glSetup(t)
 	vao, err := resource.NewVertexArray()
 	if err != nil {
 		t.Fatal("Failed to create vertex array:", err)
@@ -147,9 +167,9 @@ func TestVertexArrayCreation(t *testing.T) {
 
 func TestVertexLayout(t *testing.T) {
 	layout := resource.NewVertexLayout().
-		AddFloat(0, 3).  // Position
-		AddFloat(1, 2).  // UV
-		AddInt(2, 1)     // ID
+		AddFloat(0, 3). // Position
+		AddFloat(1, 2). // UV
+		AddInt(2, 1)    // ID
 
 	if len(layout.Attributes) != 3 {
 		t.Error("Layout should have 3 attributes")
@@ -174,11 +194,12 @@ func TestVertexLayout(t *testing.T) {
 }
 
 func TestMeshCreation(t *testing.T) {
+	glSetup(t)
 	vertices := []float32{
 		// Triangle
 		-0.5, -0.5, 0.0,
-		 0.5, -0.5, 0.0,
-		 0.0,  0.5, 0.0,
+		0.5, -0.5, 0.0,
+		0.0, 0.5, 0.0,
 	}
 
 	indices := []uint32{0, 1, 2}
@@ -209,10 +230,11 @@ func TestMeshCreation(t *testing.T) {
 }
 
 func TestMeshWithoutIndices(t *testing.T) {
+	glSetup(t)
 	vertices := []float32{
 		-0.5, -0.5, 0.0,
-		 0.5, -0.5, 0.0,
-		 0.0,  0.5, 0.0,
+		0.5, -0.5, 0.0,
+		0.0, 0.5, 0.0,
 	}
 
 	layout := resource.NewVertexLayout().AddFloat(0, 3)
@@ -229,8 +251,9 @@ func TestMeshWithoutIndices(t *testing.T) {
 }
 
 func TestTexture2DCreation(t *testing.T) {
+	glSetup(t)
 	config := resource.DefaultTextureConfig()
-	
+
 	texture, err := resource.NewTexture2D(256, 256, resource.FormatRGBA, config)
 	if err != nil {
 		t.Fatal("Failed to create texture:", err)
@@ -251,8 +274,9 @@ func TestTexture2DCreation(t *testing.T) {
 }
 
 func TestTextureArrayCreation(t *testing.T) {
+	glSetup(t)
 	config := resource.DefaultTextureConfig()
-	
+
 	texArray, err := resource.NewTextureArray(128, 128, 4, resource.FormatRGBA, config)
 	if err != nil {
 		t.Fatal("Failed to create texture array:", err)
@@ -271,8 +295,6 @@ func TestTextureArrayCreation(t *testing.T) {
 func TestTextureManager(t *testing.T) {
 	tm := resource.NewTextureManager()
 
-	// Since we don't have actual image files in tests,
-	// we'll just test the manager structure
 	if tm == nil {
 		t.Fatal("Failed to create texture manager")
 	}
@@ -285,6 +307,7 @@ func TestTextureManager(t *testing.T) {
 }
 
 func TestBufferPool(t *testing.T) {
+	glSetup(t)
 	pool := resource.NewBufferPool()
 
 	// Acquire a buffer
@@ -312,12 +335,12 @@ func TestBufferPool(t *testing.T) {
 		t.Fatal("Failed to acquire reused buffer:", err)
 	}
 
-	// Should reuse buf1 since it's large enough
+	// Should reuse buf1 (same ID, larger than requested)
 	if buf3.ID != buf1.ID {
-		t.Error("Pool should reuse released buffer")
+		t.Error("Should have reused the released buffer")
 	}
 
-	// Clean up
+	// Cleanup
 	pool.Release(buf2)
 	pool.Release(buf3)
 	pool.Clear()

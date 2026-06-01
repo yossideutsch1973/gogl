@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.3.0 - Showcase demo, cross-platform CI, test reliability
 - Add `cmd/examples/showcase`: fullscreen raymarched scene driven by a single fragment shader, with `-screenshot` flag for headless PNG capture
 - Add `shaders/fragment/raymarch_showcase.frag` and `shaders/vertex/fullscreen_triangle.vert` (no-VBO fullscreen triangle)
 - README now embeds a screenshot rendered headlessly from the showcase example
@@ -8,12 +8,7 @@
 - Replace deprecated `gl.PtrOffset` calls with the `WithOffset` overloads in `pkg/resource/vertex_array.go` and the basic/compute examples
 - Drop unused log-buffer `sync.Pool` in `pkg/shader` (triggered SA6002) in favor of a small per-call helper
 - Add package doc comments to `pkg/pipeline` and `pkg/resource`
-
-Known issue (pre-existing, not introduced here): the buffer/texture tests
-under `tests/unit/resource/` occasionally fail under llvmpipe with
-"failed to generate buffer". Reproducible on `main` too; appears to be a
-GL-context-thread-affinity issue in the test harness. Tracked for a
-follow-up.
+- Fix flaky GL tests: Go's test runner schedules individual tests on a different OS thread than `TestMain`; the GL context was stuck on the `TestMain` thread. Each test now acquires/releases the context via a `glSetup(t)` helper that calls `runtime.LockOSThread` + `MakeContextCurrent` and cleans up with `DetachCurrentContext` + `UnlockOSThread`
 
 ## v0.2.0 - Project cleanup and CI fixes
 - Rewrite README to accurately reflect implemented features
