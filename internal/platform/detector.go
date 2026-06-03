@@ -83,35 +83,35 @@ func (v OpenGLVersion) IsAtLeast(major, minor int) bool {
 
 // Capabilities represents platform-specific OpenGL capabilities
 type Capabilities struct {
-	MaxTextureSize          int32
-	MaxTextureUnits         int32
-	MaxVertexAttributes     int32
+	MaxTextureSize           int32
+	MaxTextureUnits          int32
+	MaxVertexAttributes      int32
 	MaxUniformBufferBindings int32
-	MaxWorkGroupSize        [3]int32
-	MaxWorkGroupInvocations int32
-	
+	MaxWorkGroupSize         [3]int32
+	MaxWorkGroupInvocations  int32
+
 	// Feature support
-	SupportsGeometryShaders    bool
-	SupportsComputeShaders     bool
-	SupportsTessellation       bool
-	SupportsTextureArrays      bool
-	SupportsUniformBuffers     bool
+	SupportsGeometryShaders      bool
+	SupportsComputeShaders       bool
+	SupportsTessellation         bool
+	SupportsTextureArrays        bool
+	SupportsUniformBuffers       bool
 	SupportsShaderStorageBuffers bool
-	SupportsInstancedRendering bool
-	SupportsVAO               bool
-	SupportsDebugCallback     bool
+	SupportsInstancedRendering   bool
+	SupportsVAO                  bool
+	SupportsDebugCallback        bool
 }
 
 // SystemInfo contains complete system and OpenGL information
 type SystemInfo struct {
-	Platform        Platform
-	OpenGLVersion   OpenGLVersion
-	GLSLVersion     OpenGLVersion
-	Vendor          GPUVendor
-	VendorString    string
-	RendererString  string
-	Capabilities    Capabilities
-	
+	Platform       Platform
+	OpenGLVersion  OpenGLVersion
+	GLSLVersion    OpenGLVersion
+	Vendor         GPUVendor
+	VendorString   string
+	RendererString string
+	Capabilities   Capabilities
+
 	// Platform-specific notes
 	Notes []string
 }
@@ -180,7 +180,7 @@ func (d *Detector) detectPlatform() Platform {
 
 func (d *Detector) detectOpenGLVersion() (OpenGLVersion, error) {
 	versionStr := gl.GoStr(gl.GetString(gl.VERSION))
-	
+
 	// Parse version string (e.g., "4.1 Metal - 89.4" or "4.6.0")
 	parts := strings.Fields(versionStr)
 	if len(parts) == 0 {
@@ -216,7 +216,7 @@ func (d *Detector) detectOpenGLVersion() (OpenGLVersion, error) {
 
 func (d *Detector) detectGLSLVersion() (OpenGLVersion, error) {
 	versionStr := gl.GoStr(gl.GetString(gl.SHADING_LANGUAGE_VERSION))
-	
+
 	// Parse GLSL version (e.g., "4.10" or "4.60")
 	parts := strings.Fields(versionStr)
 	if len(parts) == 0 {
@@ -253,8 +253,8 @@ func (d *Detector) detectVendor(vendorStr, rendererStr string) GPUVendor {
 	if strings.Contains(vendorLower, "nvidia") || strings.Contains(rendererLower, "nvidia") {
 		return VendorNVIDIA
 	}
-	if strings.Contains(vendorLower, "amd") || strings.Contains(rendererLower, "amd") || 
-	   strings.Contains(vendorLower, "ati") || strings.Contains(rendererLower, "radeon") {
+	if strings.Contains(vendorLower, "amd") || strings.Contains(rendererLower, "amd") ||
+		strings.Contains(vendorLower, "ati") || strings.Contains(rendererLower, "radeon") {
 		return VendorAMD
 	}
 	if strings.Contains(vendorLower, "intel") || strings.Contains(rendererLower, "intel") {
@@ -290,10 +290,10 @@ func (d *Detector) queryCapabilities(version OpenGLVersion) Capabilities {
 	caps.SupportsInstancedRendering = effectiveVersion.IsAtLeast(3, 1)
 	caps.SupportsGeometryShaders = effectiveVersion.IsAtLeast(3, 2)
 	caps.SupportsTessellation = effectiveVersion.IsAtLeast(4, 0)
-	
+
 	// These require OpenGL 4.3+ which is not available in go-gl v4.1-core
-	caps.SupportsComputeShaders = false // Always false due to library limitation
-	caps.SupportsShaderStorageBuffers = false // Always false due to library limitation  
+	caps.SupportsComputeShaders = false                           // Always false due to library limitation
+	caps.SupportsShaderStorageBuffers = false                     // Always false due to library limitation
 	caps.SupportsDebugCallback = effectiveVersion.IsAtLeast(4, 3) // This might work in 4.1
 
 	// Query additional limits if supported
@@ -324,11 +324,11 @@ func (d *Detector) generateNotes(info *SystemInfo) []string {
 	if info.Platform == PlatformMacOS {
 		notes = append(notes, "OpenGL is deprecated on macOS since 2018")
 		notes = append(notes, "Maximum supported version is OpenGL 4.1")
-		
+
 		if info.Vendor == VendorApple {
 			notes = append(notes, "Using Apple Silicon GPU with Metal backend")
 		}
-		
+
 		notes = append(notes, "Consider using Metal for production applications on macOS")
 	}
 
@@ -408,12 +408,12 @@ func (d *Detector) PrintInfo() {
 	fmt.Printf("GLSL Version: %s\n", info.GLSLVersion)
 	fmt.Printf("Vendor: %s (%s)\n", info.Vendor, info.VendorString)
 	fmt.Printf("Renderer: %s\n", info.RendererString)
-	
+
 	fmt.Println("\n=== Capabilities ===")
 	fmt.Printf("Max Texture Size: %d\n", info.Capabilities.MaxTextureSize)
 	fmt.Printf("Max Texture Units: %d\n", info.Capabilities.MaxTextureUnits)
 	fmt.Printf("Max Vertex Attributes: %d\n", info.Capabilities.MaxVertexAttributes)
-	
+
 	fmt.Println("\n=== Feature Support ===")
 	fmt.Printf("Vertex Array Objects: %v\n", info.Capabilities.SupportsVAO)
 	fmt.Printf("Geometry Shaders: %v\n", info.Capabilities.SupportsGeometryShaders)

@@ -194,20 +194,20 @@ func init() {
 type ComputeDemo struct {
 	computeProgram *shader.Program
 	renderProgram  *shader.Program
-	
+
 	particleSSBO *resource.ShaderStorageBuffer
 	particleVAO  *resource.VertexArray
 	particleVBO  *resource.VertexBuffer
-	
+
 	renderPipeline *pipeline.Pipeline
-	
+
 	particles []Particle
-	
+
 	// Simulation parameters
 	gravity           float32
 	attractorStrength float32
 	attractorPos      mgl32.Vec2
-	
+
 	// Mouse state
 	mousePos mgl32.Vec2
 }
@@ -232,7 +232,7 @@ func main() {
 		log.Println("Failed to create OpenGL 4.3 context, falling back to 4.1...")
 		glfw.WindowHint(glfw.ContextVersionMajor, 4)
 		glfw.WindowHint(glfw.ContextVersionMinor, 1)
-		
+
 		window, err = glfw.CreateWindow(windowWidth, windowHeight, "Compute Shader Demo (CPU Fallback)", nil, nil)
 		if err != nil {
 			log.Fatal("Failed to create window:", err)
@@ -263,7 +263,7 @@ func main() {
 			fmt.Printf("• %s\n", note)
 		}
 		fmt.Println("\nRunning CPU-based particle simulation instead...")
-		
+
 		// Run CPU fallback demo
 		runCPUParticleDemo(window)
 		return
@@ -340,7 +340,7 @@ func NewComputeDemo() (*ComputeDemo, error) {
 
 func (d *ComputeDemo) initParticles() {
 	d.particles = make([]Particle, numParticles)
-	
+
 	for i := range d.particles {
 		d.particles[i] = Particle{
 			Position: [2]float32{float32(windowWidth / 2), float32(windowHeight + 100)},
@@ -409,7 +409,7 @@ func (d *ComputeDemo) createBuffers() error {
 
 	// Set up vertex attributes to match the particle structure
 	stride := int32(unsafe.Sizeof(Particle{}))
-	d.particleVAO.AddFloatAttribute(0, 2, stride, 0)                                      // Position
+	d.particleVAO.AddFloatAttribute(0, 2, stride, 0)                                                 // Position
 	d.particleVAO.AddFloatAttribute(1, 2, stride, uintptr(unsafe.Offsetof(d.particles[0].Velocity))) // Velocity
 	d.particleVAO.AddFloatAttribute(2, 4, stride, uintptr(unsafe.Offsetof(d.particles[0].Color)))    // Color
 	d.particleVAO.AddFloatAttribute(3, 1, stride, uintptr(unsafe.Offsetof(d.particles[0].Life)))     // Life
@@ -502,7 +502,7 @@ func (d *ComputeDemo) Cleanup() {
 // CPU-based particle demo for platforms without compute shader support
 func runCPUParticleDemo(window *glfw.Window) {
 	fmt.Println("Running CPU-based particle simulation...")
-	
+
 	// Set up basic rendering state
 	gl.ClearColor(0.1, 0.1, 0.15, 1.0)
 	gl.Enable(gl.BLEND)
@@ -560,11 +560,11 @@ void main() {
 
 	// Create simple particle system
 	type CPUParticle struct {
-		X, Y     float32
-		VX, VY   float32
+		X, Y       float32
+		VX, VY     float32
 		R, G, B, A float32
-		Life     float32
-		Size     float32
+		Life       float32
+		Size       float32
 	}
 
 	particles := make([]CPUParticle, 100)
@@ -618,13 +618,13 @@ void main() {
 		// Update particles on CPU
 		for i := range particles {
 			p := &particles[i]
-			
+
 			p.Life -= deltaTime
 			if p.Life <= 0 {
 				// Respawn
 				p.X = 400 + (rand.Float32()-0.5)*100
 				p.Y = 600
-				p.VX = (rand.Float32()-0.5)*200
+				p.VX = (rand.Float32() - 0.5) * 200
 				p.VY = -rand.Float32()*150 - 50
 				p.Life = 3 + rand.Float32()*2
 				p.R = 0.5 + rand.Float32()*0.5
@@ -636,18 +636,22 @@ void main() {
 				p.VY -= 200 * deltaTime // gravity
 				p.X += p.VX * deltaTime
 				p.Y += p.VY * deltaTime
-				
+
 				// Bounce off walls
 				if p.X < 0 || p.X > 800 {
 					p.VX *= -0.8
-					if p.X < 0 { p.X = 0 }
-					if p.X > 800 { p.X = 800 }
+					if p.X < 0 {
+						p.X = 0
+					}
+					if p.X > 800 {
+						p.X = 800
+					}
 				}
 				if p.Y < 0 {
 					p.VY *= -0.8
 					p.Y = 0
 				}
-				
+
 				// Fade
 				p.A = p.Life / 5.0
 			}

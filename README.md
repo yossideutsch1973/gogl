@@ -71,8 +71,8 @@ go run ./cmd/examples/showcase   # fullscreen raymarched scene (pictured above)
 
 | Type | Count | Examples |
 |------|-------|---------|
-| Vertex | 7 | Basic, textured, Phong, skybox, screen quad, PBR |
-| Fragment | 14 | Lighting, blur, edge detection, gamma correction, grayscale |
+| Vertex | 8 | Basic, textured, Phong, skybox, screen quad, fullscreen triangle |
+| Fragment | 13 | Lighting, blur, edge detection, gamma correction, grayscale |
 | Geometry | 5 | Point expansion, wireframe, normal visualization, explosion |
 | Compute | 2 | Particle simulation, image processing (OpenGL 4.3+) |
 

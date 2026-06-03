@@ -185,7 +185,7 @@ func CreateProgram(shaders ...*Shader) (*Program, error) {
 	if len(shaders) == 0 {
 		return nil, fmt.Errorf("at least one shader is required")
 	}
-	
+
 	// Validate shader types - ensure we have at least vertex and fragment
 	hasVertex, hasFragment := false, false
 	for _, shader := range shaders {
@@ -202,7 +202,7 @@ func CreateProgram(shaders ...*Shader) (*Program, error) {
 			hasFragment = true
 		}
 	}
-	
+
 	if !hasVertex {
 		return nil, fmt.Errorf("vertex shader is required")
 	}
@@ -293,7 +293,7 @@ func (p *Program) Validate() error {
 	if p.ID == 0 {
 		return fmt.Errorf("program not initialized")
 	}
-	
+
 	gl.ValidateProgram(p.ID)
 	if err := checkGLError("glValidateProgram"); err != nil {
 		return err

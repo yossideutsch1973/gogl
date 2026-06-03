@@ -16,11 +16,11 @@ import (
 type TextureFormat uint32
 
 const (
-	FormatRGB    TextureFormat = gl.RGB
-	FormatRGBA   TextureFormat = gl.RGBA
-	FormatRed    TextureFormat = gl.RED
-	FormatRG     TextureFormat = gl.RG
-	FormatDepth  TextureFormat = gl.DEPTH_COMPONENT
+	FormatRGB   TextureFormat = gl.RGB
+	FormatRGBA  TextureFormat = gl.RGBA
+	FormatRed   TextureFormat = gl.RED
+	FormatRG    TextureFormat = gl.RG
+	FormatDepth TextureFormat = gl.DEPTH_COMPONENT
 )
 
 // TextureFilter represents texture filtering modes
@@ -47,20 +47,20 @@ const (
 
 // TextureConfig holds texture configuration parameters
 type TextureConfig struct {
-	MinFilter     TextureFilter
-	MagFilter     TextureFilter
-	WrapS         TextureWrap
-	WrapT         TextureWrap
+	MinFilter      TextureFilter
+	MagFilter      TextureFilter
+	WrapS          TextureWrap
+	WrapT          TextureWrap
 	GenerateMipmap bool
 }
 
 // DefaultTextureConfig returns default texture configuration
 func DefaultTextureConfig() TextureConfig {
 	return TextureConfig{
-		MinFilter:     FilterLinear,
-		MagFilter:     FilterLinear,
-		WrapS:         WrapRepeat,
-		WrapT:         WrapRepeat,
+		MinFilter:      FilterLinear,
+		MagFilter:      FilterLinear,
+		WrapS:          WrapRepeat,
+		WrapT:          WrapRepeat,
 		GenerateMipmap: false,
 	}
 }
@@ -157,7 +157,7 @@ func (t *Texture2D) Unbind() {
 // SetData sets the texture data
 func (t *Texture2D) SetData(data unsafe.Pointer) {
 	t.Bind(0)
-	
+
 	// Determine data format based on internal format
 	var dataFormat uint32
 	switch t.Format {
@@ -303,7 +303,7 @@ func NewTextureArray(width, height, layers int32, format TextureFormat, config T
 
 	// Allocate storage
 	texture.Bind(0)
-	
+
 	gl.TexImage3D(
 		gl.TEXTURE_2D_ARRAY,
 		0,

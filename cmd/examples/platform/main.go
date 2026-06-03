@@ -44,7 +44,7 @@ func main() {
 
 	// Create platform detector
 	detector := platform.New()
-	
+
 	// Detect system capabilities
 	info, err := detector.Detect()
 	if err != nil {
@@ -63,7 +63,7 @@ func main() {
 
 	// Demo feature compatibility checking
 	fmt.Println("\n=== Feature Compatibility Demo ===")
-	
+
 	features := []struct {
 		name      string
 		supported bool
@@ -88,7 +88,7 @@ func main() {
 
 	// Provide specific recommendations
 	fmt.Println("\n=== Development Recommendations ===")
-	
+
 	if info.Platform == platform.PlatformMacOS {
 		fmt.Println("🍎 macOS Development:")
 		fmt.Println("  • Target OpenGL 4.1 maximum")
@@ -113,9 +113,9 @@ func main() {
 
 	if info.Capabilities.SupportsComputeShaders {
 		fmt.Println("🚀 Compute Shaders Available:")
-		fmt.Printf("  • Max work group size: %dx%dx%d\n", 
+		fmt.Printf("  • Max work group size: %dx%dx%d\n",
 			info.Capabilities.MaxWorkGroupSize[0],
-			info.Capabilities.MaxWorkGroupSize[1], 
+			info.Capabilities.MaxWorkGroupSize[1],
 			info.Capabilities.MaxWorkGroupSize[2])
 		fmt.Printf("  • Max invocations: %d\n", info.Capabilities.MaxWorkGroupInvocations)
 	} else {
@@ -127,7 +127,7 @@ func main() {
 	fmt.Println("\n=== Example Code Generation ===")
 	fmt.Println("Based on your system, here's recommended initialization code:")
 	fmt.Println()
-	
+
 	if info.Platform == platform.PlatformMacOS {
 		fmt.Println("// macOS-optimized initialization")
 		fmt.Println("glfw.WindowHint(glfw.ContextVersionMajor, 4)")
@@ -138,7 +138,7 @@ func main() {
 		fmt.Println("glfw.WindowHint(glfw.ContextVersionMajor, 4)")
 		fmt.Println("glfw.WindowHint(glfw.ContextVersionMinor, 6)")
 	}
-	
+
 	if info.Capabilities.SupportsVAO {
 		fmt.Println("// VAO usage recommended")
 		fmt.Println("vao, _ := resource.NewVertexArray()")

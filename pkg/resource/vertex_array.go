@@ -10,24 +10,24 @@ import (
 type AttributeType uint32
 
 const (
-	Float    AttributeType = gl.FLOAT
-	Int      AttributeType = gl.INT
-	UInt     AttributeType = gl.UNSIGNED_INT
-	Byte     AttributeType = gl.BYTE
-	UByte    AttributeType = gl.UNSIGNED_BYTE
-	Short    AttributeType = gl.SHORT
-	UShort   AttributeType = gl.UNSIGNED_SHORT
+	Float  AttributeType = gl.FLOAT
+	Int    AttributeType = gl.INT
+	UInt   AttributeType = gl.UNSIGNED_INT
+	Byte   AttributeType = gl.BYTE
+	UByte  AttributeType = gl.UNSIGNED_BYTE
+	Short  AttributeType = gl.SHORT
+	UShort AttributeType = gl.UNSIGNED_SHORT
 )
 
 // VertexAttribute describes a vertex attribute
 type VertexAttribute struct {
 	Location   uint32
-	Size       int32          // Number of components (1, 2, 3, or 4)
+	Size       int32 // Number of components (1, 2, 3, or 4)
 	Type       AttributeType
 	Normalized bool
 	Stride     int32
 	Offset     uintptr
-	Divisor    uint32        // For instanced rendering
+	Divisor    uint32 // For instanced rendering
 }
 
 // VertexArray represents an OpenGL vertex array object (VAO)
@@ -81,14 +81,14 @@ func (va *VertexArray) SetIndexBuffer(ibo *IndexBuffer) {
 // AddAttribute adds a vertex attribute
 func (va *VertexArray) AddAttribute(attr VertexAttribute) {
 	va.Attributes = append(va.Attributes, attr)
-	
+
 	va.Bind()
 	if va.VBO != nil {
 		va.VBO.Bind()
 	}
 
 	gl.EnableVertexAttribArray(attr.Location)
-	
+
 	// Configure the attribute
 	switch attr.Type {
 	case Float:

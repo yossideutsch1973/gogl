@@ -61,8 +61,8 @@ type VertexBuffer struct {
 // IndexBuffer represents a buffer for index data
 type IndexBuffer struct {
 	*Buffer
-	Count      int
-	IndexType  uint32
+	Count     int
+	IndexType uint32
 }
 
 // UniformBuffer represents a buffer for uniform data

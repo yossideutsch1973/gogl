@@ -22,8 +22,8 @@ var (
 	// Point positions for point-to-quad demo
 	points = []float32{
 		-0.5, -0.5, 0.0, 1.0, 0.0, 0.0, // Red point
-		 0.5, -0.5, 0.0, 0.0, 1.0, 0.0, // Green point
-		 0.0,  0.5, 0.0, 0.0, 0.0, 1.0, // Blue point
+		0.5, -0.5, 0.0, 0.0, 1.0, 0.0, // Green point
+		0.0, 0.5, 0.0, 0.0, 0.0, 1.0, // Blue point
 	}
 
 	vertexShaderSource = `#version 410 core
@@ -319,8 +319,8 @@ func (d *Demo) createMeshes() error {
 	triangleVertices := []float32{
 		// Triangle 1
 		-0.5, -0.3, 0.0, 1.0, 0.0, 0.0,
-		 0.5, -0.3, 0.0, 0.0, 1.0, 0.0,
-		 0.0,  0.3, 0.0, 0.0, 0.0, 1.0,
+		0.5, -0.3, 0.0, 0.0, 1.0, 0.0,
+		0.0, 0.3, 0.0, 0.0, 0.0, 1.0,
 	}
 
 	d.triangleMesh, err = resource.NewMesh(triangleVertices, nil, layout)

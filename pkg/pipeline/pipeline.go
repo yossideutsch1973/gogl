@@ -63,14 +63,14 @@ const (
 type DepthFunc uint32
 
 const (
-	DepthNever    DepthFunc = gl.NEVER
-	DepthLess     DepthFunc = gl.LESS
-	DepthEqual    DepthFunc = gl.EQUAL
-	DepthLessEq   DepthFunc = gl.LEQUAL
-	DepthGreater  DepthFunc = gl.GREATER
-	DepthNotEqual DepthFunc = gl.NOTEQUAL
+	DepthNever     DepthFunc = gl.NEVER
+	DepthLess      DepthFunc = gl.LESS
+	DepthEqual     DepthFunc = gl.EQUAL
+	DepthLessEq    DepthFunc = gl.LEQUAL
+	DepthGreater   DepthFunc = gl.GREATER
+	DepthNotEqual  DepthFunc = gl.NOTEQUAL
 	DepthGreaterEq DepthFunc = gl.GEQUAL
-	DepthAlways   DepthFunc = gl.ALWAYS
+	DepthAlways    DepthFunc = gl.ALWAYS
 )
 
 // Primitive represents OpenGL primitive types
